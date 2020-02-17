@@ -1,5 +1,6 @@
 /** User class for message.ly */
 const db = require("../db")
+const ExpressError = require("../expressError");
 const bycrpt = require('bcrypt')
 const {BCRYPT_WORK_FACTOR} = require('../config')
 
@@ -14,23 +15,24 @@ class User {
 
   static async register({ username, password, first_name, last_name, phone }) {
     const hashedPassword = await bycrpt.hash(password, BCRYPT_WORK_FACTOR);
-    const results = await db.query(
-      `INSERT INTO users (username, password, first_name, last_name, phone) 
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING (username, password, first_name, last_name)`,
+    const result = await db.query(
+      `INSERT INTO users (username, password, first_name, last_name, phone, join_at, last_login_at) 
+      VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
+      RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]);
-    return results.rows[0];
+      
+    return result.rows[0]; 
   }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
 
   static async authenticate(username, password) { 
-    const results = await db.query(`
+    const result = await db.query(`
       SELECT password 
       FROM users 
       WHERE username = $1`, 
       [username]);
-    const user = results.rows[0];
+    const user = result.rows[0];
     let isValid = await bycrpt.compare(password, user.password);
     if (user && isValid){
       return true;
@@ -41,22 +43,22 @@ class User {
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) { 
-    const results = await db.query(
+    const result = await db.query(
         `UPDATE users
         SET last_login_at = current_timestamp
         WHERE username = $1
         RETURNING username`,
         [username]);
-    return results.rows;
+    return result.rows;
   }
 
   /** All: basic info on all users:
    * [{username, first_name, last_name, phone}, ...] */
 
   static async all() {
-    const results = await db.query(
+    const result = await db.query(
       `SELECT username, first_name, last_name, phone FROM users`);
-    return results.rows;
+    return result.rows;
     
   }
 
@@ -70,7 +72,7 @@ class User {
    *          last_login_at } */
 
   static async get(username) {
-    const results = await db.query(
+    const result = await db.query(
       `SELECT username, 
             first_name, 
             last_name, 
@@ -84,7 +86,7 @@ class User {
     if (!result.rows[0]) {
       throw new ExpressError(`No such user: ${username}`, 404);
     }
-    return results.rows[0]
+    return result.rows[0]
   }
 
   /** Return messages from this user.
@@ -96,7 +98,7 @@ class User {
    */
 
   static async messagesFrom(username) {
-    const results = await db.query(
+    const result = await db.query(
       `SELECT id, 
       username, 
       first_name, 
@@ -105,13 +107,14 @@ class User {
       body, 
       sent_at, 
       read_at 
-      FROM messages
-      JOIN users
-      ON users.username = messages.to_username
-      WHERE username = $1`,
+      FROM users
+      JOIN messages
+      ON to_username = username
+      WHERE from_username = $1`,
       [username]
     )
-    let messages = results.rows.map(m => {
+    console.log(result.rows)
+    let messages = result.rows.map(m => {
       return {
         id: m.id, 
         to_user: {username: m.username, 
@@ -136,7 +139,7 @@ class User {
    */
 
   static async messagesTo(username) { 
-    const results = await db.query(
+    const result = await db.query(
       `SELECT id,
       username,
       first_name,
@@ -147,15 +150,15 @@ class User {
       read_at
       FROM messages
       JOIN users
-      ON users.username = messages.from_username
-      WHERE username = $1`,
+      ON username = from_username
+      WHERE to_username = $1`,
       [username]
     )
 
-    let messages = results.rows.map(m => {
+    let messages = result.rows.map(m => {
       return {
         id: m.id, 
-        to_user: {username: m.username, 
+        from_user: {username: m.username, 
                 first_name: m.first_name, 
                 last_name: m.last_name,
                 phone: m.phone},

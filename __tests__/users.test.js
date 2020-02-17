@@ -66,6 +66,7 @@ describe("Test User class", async function () {
       username: "test",
       first_name: "Test",
       last_name: "Testy",
+      phone: "+14155550000"
     }]);
   });
 });
