@@ -1,20 +1,21 @@
 const express = require("express");
 const User = require("../models/user");
 const router = new express.Router();
+const { ensureLoggedIn, ensureCorrectUser } = require("../middleware/auth")
 
 /** GET / - get list of users.
  *
  * => {users: [{username, first_name, last_name, phone}, ...]}
  *
  **/
-router.get("/", async function (req, res, next) {
+router.get("/", ensureLoggedIn, async function (req, res, next) {
     try {
         const users = User.all()
-        return jsonify({users})
+        return jsonify({ users })
     } catch (err) {
-      return next(err);
+        return next(err);
     }
-  });
+});
 
 
 /** GET /:username - get detail of users.
@@ -22,10 +23,10 @@ router.get("/", async function (req, res, next) {
  * => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
  *
  **/
-router.get("/:username", async function (req, res, next){
-    try{
+router.get("/:username", ensureCorrectUser, async function (req, res, next) {
+    try {
         const user = User.get(username)
-        return jsonify({user})
+        return jsonify({ user })
     } catch (err) {
         return next(err)
     }
@@ -41,10 +42,10 @@ router.get("/:username", async function (req, res, next){
  *                 from_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
-router.get("/:username/to", async function (req, res, next){
-    try{
+router.get("/:username/to", ensureCorrectUser, async function (req, res, next) {
+    try {
         const messages = User.messagesTo(username)
-        return jsonify({messages})
+        return jsonify({ messages })
     } catch (err) {
         return next(err)
     }
@@ -61,10 +62,10 @@ router.get("/:username/to", async function (req, res, next){
  *                 to_user: {username, first_name, last_name, phone}}, ...]}
  *
  **/
-router.get("/:username/from", async function (req, res, next){
-    try{
+router.get("/:username/from", ensureCorrectUser, async function (req, res, next) {
+    try {
         const messages = User.messagesFrom(username)
-        return jsonify({messages})
+        return jsonify({ messages })
     } catch (err) {
         return next(err)
     }

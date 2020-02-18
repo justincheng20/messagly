@@ -15,6 +15,7 @@ router.post("/login", async function (req, res, next) {
     try {
         const { username, password } = req.body;
         if (User.authenticate(username, password)) {
+            User.updateLoginTimestamp(username);
             let token = jwt.sign({ username }, SECRET_KEY);
             return res.json({ token });
         }
@@ -33,10 +34,11 @@ router.post("/login", async function (req, res, next) {
 router.post("/register", async function (req, res, next) {
     try {
         user = User.register(req.body)
-        if (user){
-            
+        if (user) {
+            let token = jwt.sign({ username }, SECRET_KEY);
+            return res.json({ token });
         }
     } catch (err) {
         return next();
     }
-}
+})
