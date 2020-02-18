@@ -37,9 +37,10 @@ class User {
       WHERE username = $1`,
       [username]);
     const user = result.rows[0];
-    let isValid = await bycrpt.compare(password, user.password);
-    if (user && isValid){
-      return true;
+    
+    if (user){
+      let isValid = await bycrpt.compare(password, user.password);
+      return isValid;
     }
     return false;
   }
@@ -117,7 +118,7 @@ class User {
       WHERE from_username = $1`,
       [username]
     )
-    console.log(result.rows)
+    
     let messages = result.rows.map(m => {
       return {
         id: m.id,
