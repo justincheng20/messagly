@@ -1,8 +1,8 @@
 /** User class for message.ly */
 const db = require("../db")
-const ExpressError = require("../expressError");
+
 const bycrpt = require('bcrypt')
-const {BCRYPT_WORK_FACTOR} = require('../config')
+const { BCRYPT_WORK_FACTOR } = require('../config')
 
 
 /** User of the site. */
@@ -21,16 +21,20 @@ class User {
       RETURNING username, password, first_name, last_name, phone`,
       [username, hashedPassword, first_name, last_name, phone]);
       
-    return result.rows[0]; 
+    if (!result.rows[0]) {
+      throw new ExpressError(`Invalid registration info`, 400);
+    }
+
+    return result.rows[0];
   }
 
   /** Authenticate: is this username/password valid? Returns boolean. */
 
-  static async authenticate(username, password) { 
+  static async authenticate(username, password) {
     const result = await db.query(`
       SELECT password 
       FROM users 
-      WHERE username = $1`, 
+      WHERE username = $1`,
       [username]);
     const user = result.rows[0];
     let isValid = await bycrpt.compare(password, user.password);
@@ -42,13 +46,13 @@ class User {
 
   /** Update last_login_at for user */
 
-  static async updateLoginTimestamp(username) { 
+  static async updateLoginTimestamp(username) {
     const result = await db.query(
-        `UPDATE users
+      `UPDATE users
         SET last_login_at = current_timestamp
         WHERE username = $1
         RETURNING username`,
-        [username]);
+      [username]);
     return result.rows;
   }
 
@@ -58,8 +62,8 @@ class User {
   static async all() {
     const result = await db.query(
       `SELECT username, first_name, last_name, phone FROM users`);
-    return result.rows;
-    
+      return result.rows;
+
   }
 
   /** Get: get user by username
@@ -116,11 +120,11 @@ class User {
     console.log(result.rows)
     let messages = result.rows.map(m => {
       return {
-        id: m.id, 
-        to_user: {username: m.username, 
-                first_name: m.first_name, 
-                last_name: m.last_name,
-                phone: m.phone},
+        id: m.id,
+        to_user: {username: m.username,
+          first_name: m.first_name,
+          last_name: m.last_name,
+          phone: m.phone},
         body: m.body,
         sent_at: m.sent_at,
         read_at: m.read_at
@@ -138,7 +142,7 @@ class User {
    *   {username, first_name, last_name, phone}
    */
 
-  static async messagesTo(username) { 
+  static async messagesTo(username) {
     const result = await db.query(
       `SELECT id,
       username,
@@ -157,11 +161,11 @@ class User {
 
     let messages = result.rows.map(m => {
       return {
-        id: m.id, 
+        id: m.id,
         from_user: {username: m.username, 
-                first_name: m.first_name, 
-                last_name: m.last_name,
-                phone: m.phone},
+          first_name: m.first_name,
+          last_name: m.last_name,
+          phone: m.phone},
         body: m.body,
         sent_at: m.sent_at,
         read_at: m.read_at
