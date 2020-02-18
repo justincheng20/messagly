@@ -14,14 +14,14 @@ const ExpressError = require("../expressError");
 router.post("/login", async function (req, res, next) {
     try {
         const { username, password } = req.body;
-        if (User.authenticate(username, password)) {
+        if (await User.authenticate(username, password)) {
             User.updateLoginTimestamp(username);
             let token = jwt.sign({ username }, SECRET_KEY);
             return res.json({ token });
         }
-        throw new ExpressError("Invalid credentials, 401");
+        throw new ExpressError("Invalid credentials", 400);
     } catch (err) {
-        return next();
+        return next(err);
     }
 })
 
@@ -33,12 +33,15 @@ router.post("/login", async function (req, res, next) {
  */
 router.post("/register", async function (req, res, next) {
     try {
-        user = User.register(req.body)
+        const { username } = req.body
+        const user = await User.register(req.body);
         if (user) {
-            let token = jwt.sign({ username }, SECRET_KEY);
+            let token = jwt.sign( { username } , SECRET_KEY);
             return res.json({ token });
         }
     } catch (err) {
         return next();
     }
 })
+
+module.exports = router;

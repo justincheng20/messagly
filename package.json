@@ -21,5 +21,13 @@
   },
   "devDependencies": {},
   "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/justincheng20/messagly.git"
+  },
+  "bugs": {
+    "url": "https://github.com/justincheng20/messagly/issues"
+  },
+  "homepage": "https://github.com/justincheng20/messagly#readme",
   "description": ""
 }
